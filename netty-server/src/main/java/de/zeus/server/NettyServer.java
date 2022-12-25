@@ -2,6 +2,7 @@ package de.zeus.server;
 
 import de.zeus.server.netty.ClientChannelInitalizer;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -75,9 +76,10 @@ public class NettyServer {
     public void sendMessage(String message) {
         for (Channel channel : getRegisteredChannels()) {
             if(channel != null && channel.isOpen()) {
-                channel.writeAndFlush(message);
+                channel.writeAndFlush(Unpooled.wrappedBuffer(message.getBytes()));
             }
         }
+        System.out.println("Sent message: " + message);
     }
 
     public NioEventLoopGroup getNioEventLoopGroup() {
