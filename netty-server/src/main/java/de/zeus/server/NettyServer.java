@@ -29,8 +29,11 @@ public class NettyServer {
         bootstrap.childHandler(new ClientChannelInitalizer(this));
 
         try {
-            bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.TRUE);
-            bootstrap.option(ChannelOption.SO_KEEPALIVE, Boolean.TRUE);
+            bootstrap.childOption(ChannelOption.TCP_NODELAY, true)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .option(ChannelOption.SO_BACKLOG, 1024)
+                    .option(ChannelOption.AUTO_CLOSE, true)
+                    .option(ChannelOption.SO_REUSEADDR, true);
         } catch(ChannelException ignored) {}
 
         try {

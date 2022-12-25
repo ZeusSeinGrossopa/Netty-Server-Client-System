@@ -31,8 +31,9 @@ public class NettyClient {
         bootstrap.handler(new ServerChannelInitializer(this));
 
         try {
-            bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.TRUE);
-            bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
+            bootstrap.option(ChannelOption.TCP_NODELAY, true)
+                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                    .option(ChannelOption.SO_KEEPALIVE, true);
         } catch(ChannelException ignored) {}
 
         try {
