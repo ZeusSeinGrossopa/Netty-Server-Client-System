@@ -1,0 +1,95 @@
+package de.zeus.server;
+
+import de.zeus.server.netty.ClientChannelInitalizer;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+import java.util.ArrayList;
+
+@ChannelHandler.Sharable
+public class NettyServer {
+
+    private NioEventLoopGroup nioEventLoopGroup;
+    private ServerBootstrap bootstrap;
+    private ChannelFuture channelFuture;
+
+    private ArrayList<Channel> registeredChannels;
+
+    public NettyServer() {}
+
+    public final void start(String ip, int port) throws RuntimeException {
+        reset();
+
+        System.out.println("Starting server on " + ip + ":" + port);
+        bootstrap = new ServerBootstrap();
+        bootstrap.group(nioEventLoopGroup);
+        bootstrap.channel(NioServerSocketChannel.class);
+        bootstrap.childHandler(new ClientChannelInitalizer(this));
+
+        try {
+            bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.TRUE);
+            bootstrap.option(ChannelOption.SO_KEEPALIVE, Boolean.TRUE);
+        } catch(ChannelException ignored) {}
+
+        try {
+            channelFuture = bootstrap.localAddress(ip, port).bind().syncUninterruptibly();
+
+            if(channelFuture.isSuccess())
+                System.out.println("Server started successfully");
+            else
+                throw new RuntimeException("Unable to start server");
+        } catch(Exception e) {
+            System.err.println("Could not start server on " + ip + ":" + port);
+
+            throw new RuntimeException("Unable to start server", e);
+        }
+    }
+
+    public final void stop() {
+        for (Channel channel : getRegisteredChannels()) {
+            if(channel != null && channel.isOpen()) {
+                channel.close();
+            }
+        }
+
+        if(nioEventLoopGroup != null)
+            nioEventLoopGroup.shutdownGracefully();
+
+        if(channelFuture != null)
+            channelFuture.channel().close();
+
+        reset();
+    }
+
+    public void reset() {
+        nioEventLoopGroup = new NioEventLoopGroup(1);
+        registeredChannels = new ArrayList<>();
+        bootstrap = null;
+    }
+
+    public void sendMessage(String message) {
+        for (Channel channel : getRegisteredChannels()) {
+            if(channel != null && channel.isOpen()) {
+                channel.writeAndFlush(message);
+            }
+        }
+    }
+
+    public NioEventLoopGroup getNioEventLoopGroup() {
+        return nioEventLoopGroup;
+    }
+
+    public ServerBootstrap getBootstrap() {
+        return bootstrap;
+    }
+
+    public ArrayList<Channel> getRegisteredChannels() {
+        return registeredChannels;
+    }
+
+    public ChannelFuture getChannelFuture() {
+        return channelFuture;
+    }
+}
