@@ -26,4 +26,10 @@ public class ChannelReader extends SimpleChannelInboundHandler<Object> {
         String message = ((ByteBuf) object).toString(Charset.defaultCharset());
         System.out.println("Received Message: " + message);
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if(!cause.getMessage().equals("Connection reset"))
+            super.exceptionCaught(ctx, cause);
+    }
 }
