@@ -1,8 +1,7 @@
 package de.zeus.server;
 
 import de.zeus.server.packet.PacketHandler;
-import de.zeus.server.packet.packets.PacketPing;
-import de.zeus.server.packet.packets.PacketPong;
+import de.zeus.server.packet.packets.*;
 
 public class PacketListener implements PacketHandler {
 
@@ -13,4 +12,9 @@ public class PacketListener implements PacketHandler {
 
     @Override
     public void handle(PacketPong packetPong) {}
+
+    @Override
+    public void handle(PacketMessage packetMessage) {
+        System.out.println("Received message: " + packetMessage.getMessage());
+    }
 }

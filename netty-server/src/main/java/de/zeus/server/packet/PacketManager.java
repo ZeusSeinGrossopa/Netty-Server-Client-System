@@ -16,6 +16,7 @@ public class PacketManager {
 
         registerPacket(new PacketPing());
         registerPacket(new PacketPong());
+        registerPacket(new PacketMessage());
     }
 
     public void registerPacket(Packet packet) {

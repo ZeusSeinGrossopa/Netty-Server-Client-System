@@ -14,4 +14,6 @@ public interface PacketHandler {
     void handle(PacketPing packetPing);
 
     void handle(PacketPong packetPong);
+
+    void handle(PacketMessage packetMessage);
 }
