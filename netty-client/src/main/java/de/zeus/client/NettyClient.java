@@ -1,28 +1,32 @@
 package de.zeus.client;
 
 import de.zeus.client.netty.ServerChannelInitializer;
+import de.zeus.client.packet.Packet;
+import de.zeus.client.packet.PacketManager;
+import de.zeus.client.packet.packets.PacketPing;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelOption;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 @ChannelHandler.Sharable
 public class NettyClient {
 
+    private static NettyClient instance;
+
     private Bootstrap bootstrap;
     private NioSocketChannel nioSocketChannel;
     private ChannelFuture channelFuture;
     private NioEventLoopGroup nioEventLoopGroup;
 
-    public NettyClient() {}
+    private PacketManager packetManager;
+
+    public NettyClient() {
+        instance = this;
+    }
 
     public void connect(String ip, int port) {
         reset();
-
         System.out.println("Connecting to " + ip + ":" + port);
 
         bootstrap = new Bootstrap();
@@ -39,9 +43,10 @@ public class NettyClient {
         try {
             channelFuture = bootstrap.connect(ip, port).syncUninterruptibly();
 
-            if(channelFuture.isSuccess())
+            if(channelFuture.isSuccess()) {
                 System.out.println("Connected successfully");
-            else
+                sendPacket(new PacketPing());
+            } else
                 throw new RuntimeException("Unable to connect");
         } catch(Exception e) {
             System.err.println("Could not connect to " + ip + ":" + port);
@@ -63,15 +68,20 @@ public class NettyClient {
         reset();
     }
 
-    public void sendMessage(String message) {
-        if(nioSocketChannel != null && nioSocketChannel.isOpen()) {
-            nioSocketChannel.writeAndFlush(Unpooled.wrappedBuffer(message.getBytes())).addListener(future -> {
-                if(future.isSuccess())
-                    System.out.println("Sent message: " + message);
-                else
-                    System.err.println("Could not send message: " + message);
-            });
-        }
+    public void sendPacket(Packet packet) {
+        if (packet == null)
+            throw new NullPointerException("Packet cannot be null");
+
+        System.out.println("[OUT] " + packet.getClass().getSimpleName() + " " + packet.getID());
+
+        nioSocketChannel.writeAndFlush(packet).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                if (!channelFuture.isSuccess()) {
+                    channelFuture.cause().printStackTrace();
+                }
+            }
+        });
     }
 
     public void reset() {
@@ -79,6 +89,7 @@ public class NettyClient {
         nioSocketChannel = new NioSocketChannel();
         channelFuture = null;
         nioEventLoopGroup = new NioEventLoopGroup(1);
+        packetManager = new PacketManager(new PacketListener());
     }
 
     public Bootstrap getBootstrap() {
@@ -95,5 +106,17 @@ public class NettyClient {
 
     public ChannelFuture getChannelFuture() {
         return channelFuture;
+    }
+
+    public static NettyClient getInstance() {
+        return instance;
+    }
+
+    public NioEventLoopGroup getNioEventLoopGroup() {
+        return nioEventLoopGroup;
+    }
+
+    public PacketManager getPacketManager() {
+        return packetManager;
     }
 }

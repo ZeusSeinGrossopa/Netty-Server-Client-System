@@ -1,8 +1,9 @@
 package de.zeus.server;
 
 import de.zeus.server.netty.ClientChannelInitalizer;
+import de.zeus.server.packet.Packet;
+import de.zeus.server.packet.PacketManager;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -12,18 +13,23 @@ import java.util.ArrayList;
 @ChannelHandler.Sharable
 public class NettyServer {
 
+    private static NettyServer instance;
+
     private NioEventLoopGroup nioEventLoopGroup;
     private ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
 
+    private PacketManager packetManager;
     private ArrayList<Channel> registeredChannels;
 
-    public NettyServer() {}
+    public NettyServer() {
+        instance = this;
+    }
 
     public final void start(String ip, int port) throws RuntimeException {
         reset();
-
         System.out.println("Starting server on " + ip + ":" + port);
+
         bootstrap = new ServerBootstrap();
         bootstrap.group(nioEventLoopGroup);
         bootstrap.channel(NioServerSocketChannel.class);
@@ -71,15 +77,28 @@ public class NettyServer {
         nioEventLoopGroup = new NioEventLoopGroup(1);
         registeredChannels = new ArrayList<>();
         bootstrap = null;
+        packetManager = new PacketManager(new PacketListener());
     }
 
-    public void sendMessage(String message) {
+    public void sendPacket(Packet packet) {
+        if(packet == null)
+            throw new NullPointerException("Packet cannot be null");
+
+        System.out.println("[OUT] " + packet.getClass().getSimpleName() + " " + packet.getID());
+
         for (Channel channel : getRegisteredChannels()) {
-            if(channel != null && channel.isOpen()) {
-                channel.writeAndFlush(Unpooled.wrappedBuffer(message.getBytes()));
-            }
+            if(!channel.isOpen())
+                continue;
+
+            channel.writeAndFlush(packet).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                    if(!channelFuture.isSuccess()) {
+                        channelFuture.cause().printStackTrace();
+                    }
+                }
+            });
         }
-        System.out.println("Sent message: " + message);
     }
 
     public NioEventLoopGroup getNioEventLoopGroup() {
@@ -96,5 +115,13 @@ public class NettyServer {
 
     public ChannelFuture getChannelFuture() {
         return channelFuture;
+    }
+
+    public PacketManager getPacketManager() {
+        return packetManager;
+    }
+
+    public static NettyServer getInstance() {
+        return instance;
     }
 }
