@@ -9,6 +9,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 @ChannelHandler.Sharable
 public class NettyServer {
@@ -81,8 +82,7 @@ public class NettyServer {
     }
 
     public void sendPacket(Packet packet) {
-        if(packet == null)
-            throw new NullPointerException("Packet cannot be null");
+        Objects.requireNonNull(packet, "Packet cannot be null");
 
         System.out.println("[OUT] " + packet.getClass().getSimpleName() + " " + packet.getID());
 
@@ -99,6 +99,25 @@ public class NettyServer {
                 }
             });
         }
+    }
+
+    public void sendPacketFor(Channel channel, Packet packet) {
+        Objects.requireNonNull(packet, "Packet cannot be null");
+        Objects.requireNonNull(channel, "Channel cannot be null");
+
+        System.out.println("[OUT] " + packet.getClass().getSimpleName() + " " + packet.getID());
+
+        if(!channel.isOpen())
+            return;
+
+        channel.writeAndFlush(packet).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                if(!channelFuture.isSuccess()) {
+                    channelFuture.cause().printStackTrace();
+                }
+            }
+        });
     }
 
     public NioEventLoopGroup getNioEventLoopGroup() {
