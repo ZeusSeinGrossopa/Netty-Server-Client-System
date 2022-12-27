@@ -7,7 +7,7 @@ public class PacketListener implements PacketHandler {
 
     @Override
     public void handle(PacketPing packetPing) {
-        NettyServer.getInstance().sendPacket(new PacketPong());
+        NettyServer.getInstance().sendPacketFor(packetPing.getChannel(), new PacketPong());
     }
 
     @Override

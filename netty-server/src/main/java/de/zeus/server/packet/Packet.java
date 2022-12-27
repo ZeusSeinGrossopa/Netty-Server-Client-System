@@ -2,7 +2,7 @@ package de.zeus.server.packet;
 
 import de.zeus.server.utils.PacketBuffer;
 
-public abstract class Packet {
+public abstract class Packet extends IncomingPacket {
 
     public abstract void write(PacketBuffer buffer);
 
