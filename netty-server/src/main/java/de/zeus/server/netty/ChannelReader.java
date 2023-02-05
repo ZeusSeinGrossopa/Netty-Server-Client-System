@@ -20,7 +20,7 @@ public class ChannelReader extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext channel, Object object) throws Exception {
-        NettyServer.getInstance().getPacketManager().getPacketHandler().handle(object);
+        NettyServer.getInstance().getPacketManager().getPacketHandler().handle(object, channel.channel());
     }
 
     @Override
